@@ -1,0 +1,76 @@
+---
+title: "Refine"
+author: "Aarij Khawaja"
+date: '2019-03-26'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1) Load the data in RStudio:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+df <- read.csv('refine_original.csv')
+library(tidyr)
+library(dplyr)
+colnames(df) <- c("Company", "Product code / number", "Address", "City", "Country", "Name")
+df
+```
+
+2) Clean up brand names
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+refine2 <- df %>% 
+mutate(Company = ifelse(grepl("^phil|^fil|^phl", df$Company, ignore.case = TRUE), "philips", ifelse(grepl("^ak", df$Company, ignore.case = TRUE), 'akzo', ifelse(grepl("^van", df$Company, ignore.case = TRUE), 'van houten', 'unilever'))))
+refine2
+```
+
+3) Separate product code and number
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+refine3 <- refine2 %>%
+  separate(col = "Product code / number",
+          into = c("Product_code", "Product_number"),
+          sep = "-")
+refine3
+```
+
+4) Add product categories
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+refine4 <- refine3 %>% mutate (Product_categories = ifelse(grepl("p", refine3$Product_code, ignore.case = TRUE), "Smartphone", ifelse(grepl("v", refine3$Product_code, ignore.case = TRUE), 'TV', ifelse(grepl("x", refine3$Product_code, ignore.case = TRUE), 'Laptop', 'Tablet' ))))
+refine4
+```
+
+5) Add full address for geocoding
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+refine5 <- refine4 %>% 
+  unite(Full_address, Address:Country, sep = ", ", remove = FALSE)
+refine5
+```
+
+6) Create dummy variables for company and product category
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+refine6 <- refine5 %>% 
+  mutate(Company_philips = ifelse(grepl("philips", refine5$Company), 1, 0)) %>% 
+  mutate(Company_akzo = ifelse(grepl("akzo", refine5$Company),  1, 0)) %>% 
+  mutate(Company_van_houten = ifelse(grepl("van houten", refine5$Company),  1, 0)) %>% 
+  mutate(Company_unilever = ifelse(grepl("unilever", refine5$Company),  1, 0)) %>% 
+  mutate(Product_smartphone = ifelse(grepl("Smartphone", refine5$Product_categories),  1, 0)) %>% 
+  mutate(Product_tv = ifelse(grepl("TV", refine5$Product_categories),  1, 0)) %>% 
+  mutate(Product_laptop = ifelse(grepl("Laptop", refine5$Product_categories),  1, 0)) %>% 
+  mutate(Product_tablet = ifelse(grepl("Tablet", refine5$Product_categories),  1, 0))
+refine6
+```
+
+7) Rename and export the file
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+refine_clean <- refine6
+write.csv(refine_clean, "refine_clean.csv")
+```
+
